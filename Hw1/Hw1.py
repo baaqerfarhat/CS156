@@ -118,8 +118,8 @@ def estimate_disagreement(f, g, num_test_points=1000):
 
 def hypothesis_g(weights):
     def g(x):
-        x_aug = np.hstack(([1], x)) 
-        return 1 if np.dot(weights, x_aug) > 0 else -1
+        bias2 = np.hstack(([1], x)) 
+        return 1 if np.dot(weights, bias2) > 0 else -1
     return g
 
 def test(N, num_runs=1000):
