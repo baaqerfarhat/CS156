@@ -122,6 +122,10 @@ def hypothesis_g(weights):
         return 1 if np.dot(weights, bias2) > 0 else -1
     return g
 
+def linear_regression(X, Y):
+    N= len(Y)
+
+
 def test(N, num_runs=1000):
     total_iterations = 0
     disagreement_prob = 0
