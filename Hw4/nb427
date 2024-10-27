@@ -1,0 +1,96 @@
+import math
+import random
+import numpy as np
+
+def target_function(x):
+    return math.sin(math.pi * x)
+
+def random_points(n):
+    return [random.uniform(-1, 1) for _ in range(n)]
+
+def find_slope():
+    x1, x2 = random_points(2)
+    y1, y2 = target_function(x1), target_function(x2)
+    return ((x1 * y1) + (x2 * y2)) / (x1**2 + x2**2)
+
+def calculate_bias(avg_slope):
+    def avg_function(x):
+        return avg_slope * x
+    total_deviation = 0
+    for x in random_points(1000):
+        total_deviation += (avg_function(x) - target_function(x)) ** 2
+    return total_deviation / 1000
+
+def calculate_variance(N, avg_slope, slope_list):
+    def avg_function(x):
+        return avg_slope * x
+    def individual_function(slope, x):
+        return slope * x
+    total_variance = 0
+    for x in random_points(1000):
+        for slope in slope_list:
+            total_variance += (avg_function(x) - individual_function(slope, x)) ** 2
+    return total_variance / (N * 1000)
+
+def run_experiment(N):
+    total_slope = 0
+    slope_list = []
+    for _ in range(N):
+        slope = find_slope()
+        slope_list.append(slope)
+        total_slope += slope
+    avg_slope = total_slope / N
+    avg_b = 0
+    bias = calculate_bias(avg_slope)
+    variance = calculate_variance(N, avg_slope, slope_list)
+    return avg_slope, avg_b, bias, variance
+
+def h_a(b, x):
+    return b
+
+def h_b(a, x):
+    return a * x
+
+def h_c(a, b, x):
+    return a * x + b
+
+def h_d(a, x):
+    return a * x**2
+
+def h_e(a, b, x):
+    return a * x**2 + b
+
+def estimate_out_of_sample_error(N=1000):
+    x_values = random_points(1000)
+    b_values = [target_function(x) for x in random_points(N)]
+    avg_b = np.mean(b_values)
+    bias_a = np.mean([(avg_b - target_function(x))**2 for x in x_values])
+    variance_a = np.mean([np.mean([(h_a(b, x) - avg_b)**2 for x in x_values]) for b in b_values])
+    a_values = [target_function(x) / x if x != 0 else 0 for x in random_points(N)]
+    avg_a = np.mean(a_values)
+    bias_b = np.mean([(h_b(avg_a, x) - target_function(x))**2 for x in x_values])
+    variance_b = np.mean([np.mean([(h_b(a, x) - h_b(avg_a, x))**2 for x in x_values]) for a in a_values])
+    ab_pairs = [(target_function(x1) / x1 if x1 != 0 else 0, target_function(x2)) for x1, x2 in zip(random_points(N), random_points(N))]
+    avg_a_c = np.mean([ab[0] for ab in ab_pairs])
+    avg_b_c = np.mean([ab[1] for ab in ab_pairs])
+    bias_c = np.mean([(h_c(avg_a_c, avg_b_c, x) - target_function(x))**2 for x in x_values])
+    variance_c = np.mean([np.mean([(h_c(a, b, x) - h_c(avg_a_c, avg_b_c, x))**2 for x in x_values]) for a, b in ab_pairs])
+    a_values_d = [target_function(x) / x**2 if x != 0 else 0 for x in random_points(N)]
+    avg_a_d = np.mean(a_values_d)
+    bias_d = np.mean([(h_d(avg_a_d, x) - target_function(x))**2 for x in x_values])
+    variance_d = np.mean([np.mean([(h_d(a, x) - h_d(avg_a_d, x))**2 for x in x_values]) for a in a_values_d])
+    ab_pairs_e = [(target_function(x1) / x1**2 if x1 != 0 else 0, target_function(x2)) for x1, x2 in zip(random_points(N), random_points(N))]
+    avg_a_e = np.mean([ab[0] for ab in ab_pairs_e])
+    avg_b_e = np.mean([ab[1] for ab in ab_pairs_e])
+    bias_e = np.mean([(h_e(avg_a_e, avg_b_e, x) - target_function(x))**2 for x in x_values])
+    variance_e = np.mean([np.mean([(h_e(a, b, x) - h_e(avg_a_e, avg_b_e, x))**2 for x in x_values]) for a, b in ab_pairs_e])
+    return {'a': bias_a + variance_a, 'b': bias_b + variance_b, 'c': bias_c + variance_c, 'd': bias_d + variance_d, 'e': bias_e + variance_e}
+
+N = 100000
+result = run_experiment(N)
+print("average slope:", result[0])
+print("bias:", result[2])
+print("variance:", result[3])
+
+out_of_sample_errors = estimate_out_of_sample_error()
+print("Out-of-sample errors:", out_of_sample_errors)
